@@ -30,6 +30,9 @@ class Robot {
       0, 255, 0  // Flanker
     }
     , {
+      0, 255, 0  // Flanker
+    }
+    , {
       255, 0, 0  // Rear
     }
   };
@@ -39,15 +42,15 @@ class Robot {
     identity = n + "";
     for (int i = 0; i<dy; i++)
       for (int j = 0; j<dx; j++) {
-        map[i][j][0] = -1;  // Square type
-        map[i][j][1] = n;   // Robot indentifier, just to keep things standard between maps
-        map[i][j][2] = -1;  // Role
+        map[i][j][0] = n;  // Identifier
+        map[i][j][1] = -1;   // Role
+        map[i][j][2] = -1;  // Square Type
       }
   }
 
   void update(int px, int py, int t, int r) {
-    map[py][px][0] = t;
-    map[py][px][2] = r;
+    map[py][px][1] = r;
+    map[py][px][2] = t;
     role = r;
     roles.add(r);
     initialized = true;
@@ -66,7 +69,7 @@ class Robot {
       return;
     if (replaying)
       replay();
-    if ((yCurr==yFinal) && (xCurr==xFinal)){
+    if ((yCurr==yFinal) && (xCurr==xFinal)) {
       moving = false;
       if (replaying)
         replayPosition++;
@@ -90,7 +93,7 @@ class Robot {
           yCurr = yCurr - 1;
       }
     }
-    fill(roleColor[role][0], roleColor[role][1], roleColor[role][2]);
+    fill(roleColor[role-1][0], roleColor[role-1][1], roleColor[role-1][2]);
     ellipse(xCurr, yCurr, 30, 30);
     textAlign(CENTER, CENTER);
     textSize(20);
@@ -99,7 +102,7 @@ class Robot {
   }
 
   void startReplay() {
-    if (roles.size() < 2){
+    if (roles.size() < 2) {
       replaying = false;
       return;
     }
@@ -110,7 +113,7 @@ class Robot {
   }
 
   void replay() {
-    if (replayPosition == roles.size()){
+    if (replayPosition == roles.size()) {
       replaying = false;
       replayPosition = 0;
       return;
@@ -129,6 +132,10 @@ class Robot {
 
   Boolean isMoving() {
     return (moving || replaying);
+  }
+  
+  void stopMoving(){
+    moving = false;
   }
 }
 

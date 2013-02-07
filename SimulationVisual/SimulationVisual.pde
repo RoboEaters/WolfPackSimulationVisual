@@ -1,12 +1,12 @@
 // SimulationVisual.pde
 // UCI Robocup Rescue 2013 
 
-int swidth = 700;
-int sheight = 700;
-
+int SWIDTH = 700;
+int SHEIGHT = 700;
+int FRAMERATE = 150;
 Robot[] r;                          // List of all robots
 BufferedReader reader;
-String input = "map.txt";           // Input file
+String input = "sharedMap.out.txt";           // Input file
 
 int dimension = 0;                  // Width of map
 int[][][] mainMap;
@@ -19,23 +19,26 @@ float[][] bcoordst;                 // Button coordinates top
 float[][] bcoordsb;                 // Button coordinates bottom
 
 // Colors (RGB)
-int[] wall = {
-  0, 0, 0
-};
-int[] unexplored = {
+int[] unexplored = {        // -1
   224, 224, 244
 };
-int[] open = {
+int[] wall = {              // 0
+  0, 0, 0
+};
+int[] open = {              // 1
   65, 105, 225
 };
-int[] victim = {
+int[] openAndVisited = {    // 2
+  111, 136, 219
+};
+int[] victim = {            // 5
   255, 255, 0
 };
 
 void setup() {
-  size(swidth, sheight);
+  size(SWIDTH, SHEIGHT);
   background(50);
-  frameRate(20);
+  frameRate(FRAMERATE);
   noStroke();
   reader = createReader(input);
   loadMap();
@@ -46,6 +49,10 @@ void restart() {
   mapInitialized = false;
   simulationComplete = false;
   paused = false;
+  r[1].stopMoving();
+  r[2].stopMoving();
+  r[3].stopMoving();
+  r[4].stopMoving();
   try {
     reader.close();
   }
@@ -58,7 +65,7 @@ void restart() {
 }
 
 void initializeMap(int d) {
-  dimension = d;
+  dimension = d -1;
   mainMap = new int[dimension][dimension][3];
   r = new Robot[5];
   r[0] = null;
@@ -80,10 +87,10 @@ void loadMap() {
       if (line == null) 
         simulationComplete = true;
       else {
-        cols = splitTokens(line, ",");
+        cols = splitTokens(line, ";");
         if (!mapInitialized)
           initializeMap(cols.length);
-        for (int i = 0; i<cols.length; i++) 
+        for (int i = 0; i<(cols.length-1); i++) 
           mainMap[row][i] = int(splitTokens(cols[i], " "));
         row++;
       }
@@ -110,66 +117,66 @@ void printMaptoConsole() {
 }
 
 void drawMap() {
-  int buffer = (swidth - (dimension*50))/2;
+  int buffer = (SWIDTH - (dimension*50))/2;
   int robot;
   for (int i = 0; i<dimension; i++) {
     for (int j = 0; j<dimension; j++) {
-      if (mainMap[i][j][0] == -1)
+      if (mainMap[i][j][2] == -1)
         fill(unexplored[0], unexplored[1], unexplored[2]);
-      else if (mainMap[i][j][0] == 0)
+      else if (mainMap[i][j][2] == 0)
         fill(wall[0], wall[1], wall[2]);
-      else if (mainMap[i][j][0] == 1)
+      else if (mainMap[i][j][2] == 1)
         fill(open[0], open[1], open[2]);
-      else if (mainMap[i][j][0] == 5)
+      else if (mainMap[i][j][2] == 2)
+        fill(openAndVisited[0], openAndVisited[1], openAndVisited[2]);
+      else if (mainMap[i][j][2] == 5)
         fill(victim[0], victim[1], victim[2]);
-      else if (mainMap[i][j][0] == 0)
-        fill(wall[0], wall[1], wall[2]);
       rect((buffer+(j*50)), (buffer+(i*50)), 50, 50);
-      robot = mainMap[i][j][1];
+      robot = mainMap[i][j][0];
       if (robot > 0 ) {
-        r[robot].update(j, i, mainMap[i][j][0], mainMap[i][j][2]);
+        r[robot].update(j, i, mainMap[i][j][2], mainMap[i][j][1]);
         r[robot].move((buffer + 25 + (j*50)), (buffer+25+(i*50)));
       }
     }
   }
 }
 
-void replayMap(int n) {
-  int buffer = (swidth - (dimension*50))/2;
+void replayMap(int id) {
+  int buffer = (SWIDTH - (dimension*50))/2;
   for (int i = 0; i<dimension; i++) {
     for (int j = 0; j<dimension; j++) {
-      if (mainMap[i][j][0] == -1)
+      if (mainMap[i][j][2] == -1)
         fill(unexplored[0], unexplored[1], unexplored[2]);
-      else if (mainMap[i][j][0] == 0)
+      else if (mainMap[i][j][2] == 0)
         fill(wall[0], wall[1], wall[2]);
-      else if (mainMap[i][j][0] == 1)
+      else if (mainMap[i][j][2] == 1)
         fill(open[0], open[1], open[2]);
-      else if (mainMap[i][j][0] == 5)
+      else if (mainMap[i][j][2] == 2)
+        fill(openAndVisited[0], openAndVisited[1], openAndVisited[2]);
+      else if (mainMap[i][j][2] == 5)
         fill(victim[0], victim[1], victim[2]);
-      else if (mainMap[i][j][0] == 0)
-        fill(wall[0], wall[1], wall[2]);
       rect((buffer+(j*50)), (buffer+(i*50)), 50, 50);
     }
   }
-  r[n].startReplay();
+  r[id].startReplay();
 }
 
 void drawButtons() {
-  float buffer = (swidth - (dimension*50))/2;
-  float bwidth = ((swidth-(2*buffer))/5);
+  float buffer = (SWIDTH - (dimension*50))/2;
+  float bwidth = ((SWIDTH-(2*buffer))/5);
   float bx = buffer;
   float byt = (buffer/2) - 20;
   String[] btextt = {
     "Restart", "", ""
   };
   bcoordst = new float[btextt.length][2];
-  float bwt = ((swidth-(2*buffer))- (btextt.length-1)*10)/btextt.length;
-  float byb = sheight - (buffer/2) - 20;
+  float bwt = ((SWIDTH-(2*buffer))- (btextt.length-1)*10)/btextt.length;
+  float byb = SHEIGHT - (buffer/2) - 20;
   String[] btextb = {
     "1", "2", "3", "4", "Exit"
   };
   bcoordsb = new float[btextb.length][2];
-  float bwb = ((swidth-(2*buffer)) - (btextb.length-1)*10)/btextb.length;
+  float bwb = ((SWIDTH-(2*buffer)) - (btextb.length-1)*10)/btextb.length;
   textAlign(CENTER, CENTER);
   textSize(20);
   for (int i = 0; i<btextt.length; i++) {
