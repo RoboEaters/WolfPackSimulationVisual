@@ -1,16 +1,20 @@
 // SimulationVisual.pde
 // UCI Robocup Rescue 2013 
 
-int SWIDTH = 700;
-int SHEIGHT = 700;
+import java.io.File;
+
+int SWIDTH = 700;                   // Screen Width
+int SHEIGHT = 700;                  // Screen Height
 int FRAMERATE = 150;
 Robot[] r;                          // List of all robots
-BufferedReader reader;
-String input = "sharedMap.out.txt";           // Input file
+
+BufferedReader reader;  
+File input;
 
 int dimension = 0;                  // Width of map
 int[][][] mainMap;
 
+boolean started = false;
 boolean simulationComplete = false;
 boolean mapInitialized = false;
 boolean paused = false;
@@ -40,28 +44,24 @@ void setup() {
   background(50);
   frameRate(FRAMERATE);
   noStroke();
-  reader = createReader(input);
-  loadMap();
-  drawMap();
+  drawButtons();
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textSize(20);
+  text("Select a file to begin", SWIDTH/2, SHEIGHT/2);
 }
 
-void restart() {
-  mapInitialized = false;
-  simulationComplete = false;
-  paused = false;
-  r[1].stopMoving();
-  r[2].stopMoving();
-  r[3].stopMoving();
-  r[4].stopMoving();
-  try {
-    reader.close();
-  }
-  catch (IOException e)
-  {
-    System.out.println("Error closing file, exiting...");
-    exit();
-  }
-  reader = createReader(input);
+void startSimulation(File f) {
+  if (f == null)
+    return;
+  input = f;
+  reader = createReader(input.getAbsolutePath());
+  if (reader == null) {
+    System.out.println("Error opening file...");
+  } 
+  loadMap();
+  drawMap();
+  started = true;
 }
 
 void initializeMap(int d) {
@@ -141,8 +141,32 @@ void drawMap() {
   }
 }
 
+void restartSimulation() {
+  mapInitialized = false;
+  simulationComplete = false;
+  paused = false;
+  r[1].stopMoving();
+  r[2].stopMoving();
+  r[3].stopMoving();
+  r[4].stopMoving();
+  try {
+    reader.close();
+  }
+  catch (IOException e)
+  {
+    System.out.println("Error closing file, exiting...");
+    exit();
+  }
+  startSimulation(input);
+}
+
 void replayMap(int id) {
   int buffer = (SWIDTH - (dimension*50))/2;
+  simulationComplete = true;
+  r[1].stopMoving();
+  r[2].stopMoving();
+  r[3].stopMoving();
+  r[4].stopMoving();
   for (int i = 0; i<dimension; i++) {
     for (int j = 0; j<dimension; j++) {
       if (mainMap[i][j][2] == -1)
@@ -162,12 +186,12 @@ void replayMap(int id) {
 }
 
 void drawButtons() {
-  float buffer = (SWIDTH - (dimension*50))/2;
+  float buffer = 100;
   float bwidth = ((SWIDTH-(2*buffer))/5);
   float bx = buffer;
   float byt = (buffer/2) - 20;
   String[] btextt = {
-    "Restart", "", ""
+    "Select File", "Restart", "", ""
   };
   bcoordst = new float[btextt.length][2];
   float bwt = ((SWIDTH-(2*buffer))- (btextt.length-1)*10)/btextt.length;
@@ -195,18 +219,20 @@ void drawButtons() {
     fill(50);
     text(btextb[i], bcoordsb[i][0]+(bwb/2), byb+20);
   }
-  triangle(bcoordst[1][0]+(bwt/2)-10, byt+10, bcoordst[1][0]+(bwt/2)-10, byt+30, bcoordst[1][0]+(bwt/2)+10, byt+20);
-  rect(bcoordst[2][0]+(bwt/2)-10, byt+10, 8, 20);
-  rect(bcoordst[2][0]+(bwt/2)+2, byt+10, 8, 20);
+  triangle(bcoordst[2][0]+(bwt/2)-10, byt+10, bcoordst[2][0]+(bwt/2)-10, byt+30, bcoordst[2][0]+(bwt/2)+10, byt+20);
+  rect(bcoordst[3][0]+(bwt/2)-10, byt+10, 8, 20);
+  rect(bcoordst[3][0]+(bwt/2)+2, byt+10, 8, 20);
 }
 
 void mousePressed() {
   if (mouseY>32 && mouseY<72) {
-    if (mouseX>bcoordst[0][0] && mouseX<bcoordst[0][1])
-      restart();
-    else if (mouseX>bcoordst[1][0] && mouseX<bcoordst[1][1])
+    if (mouseX>bcoordst[0][0] && mouseX<bcoordst[0][1])        // Select File
+      selectInput("Select a file to simulate...", "startSimulation");
+    else if (mouseX>bcoordst[1][0] && mouseX<bcoordst[1][1])   // Restart
+      restartSimulation();
+    else if (mouseX>bcoordst[2][0] && mouseX<bcoordst[2][1])   // Play
       paused = false;
-    else if (mouseX>bcoordst[2][0] && mouseX<bcoordst[2][1])
+    else if (mouseX>bcoordst[3][0] && mouseX<bcoordst[3][1])   // Pause
       paused = true;
   }
   else if (mouseY<668 && mouseY>628) {
@@ -233,8 +259,8 @@ Boolean robotsMoving() {
 }
 
 void draw() {
-  if (!paused) {
-    if (robotsMoving()) {
+  if (!paused && started) {
+    if (mapInitialized && robotsMoving()) {
       animateAll();
     }
     else if (!simulationComplete) {

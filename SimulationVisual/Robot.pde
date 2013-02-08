@@ -133,8 +133,8 @@ class Robot {
   Boolean isMoving() {
     return (moving || replaying);
   }
-  
-  void stopMoving(){
+
+  void stopMoving() {
     moving = false;
   }
 }
