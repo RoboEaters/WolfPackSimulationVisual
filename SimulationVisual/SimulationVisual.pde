@@ -3,39 +3,41 @@
 
 import java.io.File;
 
-int SWIDTH = 700;                   // Screen Width
-int SHEIGHT = 700;                  // Screen Height
-int FRAMERATE = 150;
-Robot[] r;                          // List of all robots
+private int SWIDTH = 700;                   // Screen Width
+private int SHEIGHT = 700;                  // Screen Height
+private int BUFFER = 100;                   // Spacing between window edge and map
+public static int TILE_SIZE;                // Dimension of map tiles
+private int FRAMERATE = 150;                // Higher means faster, lower is slower
+private Robot[] r;                          // List of all robots
 
-BufferedReader reader;  
-File input;
+private BufferedReader reader;  
+private File input;
 
-int dimension = 0;                  // Width of map
-int[][][] mainMap;
+public int dimension = 0;                  // Width of map (tiles)
+private int[][][] mainMap;
 
-boolean started = false;
-boolean simulationComplete = false;
-boolean mapInitialized = false;
-boolean paused = false;
+private boolean started = false;
+private boolean simulationComplete = false;
+private boolean mapInitialized = false;
+private boolean paused = false;
 
-float[][] bcoordst;                 // Button coordinates top
-float[][] bcoordsb;                 // Button coordinates bottom
+private int[][] bcoordst;                 // Button coordinates top
+private int[][] bcoordsb;                 // Button coordinates bottom
 
 // Colors (RGB)
-int[] unexplored = {        // -1
+private int[] unexplored = {        // -1
   224, 224, 244
 };
-int[] wall = {              // 0
+private int[] wall = {              // 0
   0, 0, 0
 };
-int[] open = {              // 1
+private int[] open = {              // 1
   65, 105, 225
 };
-int[] openAndVisited = {    // 2
+private int[] openAndVisited = {    // 2
   111, 136, 219
 };
-int[] victim = {            // 5
+private int[] victim = {            // 5
   255, 255, 0
 };
 
@@ -65,7 +67,8 @@ void startSimulation(File f) {
 }
 
 void initializeMap(int d) {
-  dimension = d -1;
+  dimension = d;
+  TILE_SIZE = (SWIDTH - (2*BUFFER))/dimension; 
   mainMap = new int[dimension][dimension][3];
   r = new Robot[5];
   r[0] = null;
@@ -74,6 +77,7 @@ void initializeMap(int d) {
   r[3] = new Robot(dimension, dimension, 3);
   r[4] = new Robot(dimension, dimension, 4);
   mapInitialized = true;
+  background(50);
   drawButtons();
 }
 
@@ -87,10 +91,10 @@ void loadMap() {
       if (line == null) 
         simulationComplete = true;
       else {
-        cols = splitTokens(line, ";");
+        cols = splitTokens(line.trim(), ";");
         if (!mapInitialized)
           initializeMap(cols.length);
-        for (int i = 0; i<(cols.length-1); i++) 
+        for (int i = 0; i<(cols.length); i++) 
           mainMap[row][i] = int(splitTokens(cols[i], " "));
         row++;
       }
@@ -117,7 +121,6 @@ void printMaptoConsole() {
 }
 
 void drawMap() {
-  int buffer = (SWIDTH - (dimension*50))/2;
   int robot;
   for (int i = 0; i<dimension; i++) {
     for (int j = 0; j<dimension; j++) {
@@ -131,17 +134,19 @@ void drawMap() {
         fill(openAndVisited[0], openAndVisited[1], openAndVisited[2]);
       else if (mainMap[i][j][2] == 5)
         fill(victim[0], victim[1], victim[2]);
-      rect((buffer+(j*50)), (buffer+(i*50)), 50, 50);
+      rect((BUFFER+(j*TILE_SIZE)), (BUFFER+(i*TILE_SIZE)), TILE_SIZE, TILE_SIZE);
       robot = mainMap[i][j][0];
       if (robot > 0 ) {
         r[robot].update(j, i, mainMap[i][j][2], mainMap[i][j][1]);
-        r[robot].move((buffer + 25 + (j*50)), (buffer+25+(i*50)));
+        r[robot].move((BUFFER + (TILE_SIZE/2) + (j*TILE_SIZE)), (BUFFER + (TILE_SIZE/2) + (i*TILE_SIZE)));
       }
     }
   }
 }
 
-void restartSimulation() {
+void restartSimulation(File f) {
+  if (f == null)
+    return;
   mapInitialized = false;
   simulationComplete = false;
   paused = false;
@@ -157,11 +162,10 @@ void restartSimulation() {
     System.out.println("Error closing file, exiting...");
     exit();
   }
-  startSimulation(input);
+  startSimulation(f);
 }
 
 void replayMap(int id) {
-  int buffer = (SWIDTH - (dimension*50))/2;
   simulationComplete = true;
   r[1].stopMoving();
   r[2].stopMoving();
@@ -179,28 +183,27 @@ void replayMap(int id) {
         fill(openAndVisited[0], openAndVisited[1], openAndVisited[2]);
       else if (mainMap[i][j][2] == 5)
         fill(victim[0], victim[1], victim[2]);
-      rect((buffer+(j*50)), (buffer+(i*50)), 50, 50);
+      rect((BUFFER+(j*TILE_SIZE)), (BUFFER+(i*TILE_SIZE)), TILE_SIZE, TILE_SIZE);
     }
   }
   r[id].startReplay();
 }
 
 void drawButtons() {
-  float buffer = 100;
-  float bwidth = ((SWIDTH-(2*buffer))/5);
-  float bx = buffer;
-  float byt = (buffer/2) - 20;
+  int bwidth = ((SWIDTH-(2*BUFFER))/5);
+  int bx = BUFFER;
+  int byt = (BUFFER/2) - 20;
   String[] btextt = {
     "Select File", "Restart", "", ""
   };
-  bcoordst = new float[btextt.length][2];
-  float bwt = ((SWIDTH-(2*buffer))- (btextt.length-1)*10)/btextt.length;
-  float byb = SHEIGHT - (buffer/2) - 20;
+  bcoordst = new int[btextt.length][2];
+  int bwt = ((SWIDTH-(2*BUFFER))- (btextt.length-1)*10)/btextt.length;
+  int byb = SHEIGHT - (BUFFER/2) - 20;
   String[] btextb = {
     "1", "2", "3", "4", "Exit"
   };
-  bcoordsb = new float[btextb.length][2];
-  float bwb = ((SWIDTH-(2*buffer)) - (btextb.length-1)*10)/btextb.length;
+  bcoordsb = new int[btextb.length][2];
+  int bwb = ((SWIDTH-(2*BUFFER)) - (btextb.length-1)*10)/btextb.length;
   textAlign(CENTER, CENTER);
   textSize(20);
   for (int i = 0; i<btextt.length; i++) {
@@ -226,13 +229,15 @@ void drawButtons() {
 
 void mousePressed() {
   if (mouseY>32 && mouseY<72) {
-    if (mouseX>bcoordst[0][0] && mouseX<bcoordst[0][1])        // Select File
+    if ((mouseX>bcoordst[0][0] && mouseX<bcoordst[0][1]) && started)             // Select File once simulation has started
+      selectInput("Select a file to simulate...", "restartSimulation");
+    else if (mouseX>bcoordst[0][0] && mouseX<bcoordst[0][1])                     // Select File
       selectInput("Select a file to simulate...", "startSimulation");
-    else if (mouseX>bcoordst[1][0] && mouseX<bcoordst[1][1])   // Restart
-      restartSimulation();
-    else if (mouseX>bcoordst[2][0] && mouseX<bcoordst[2][1])   // Play
+    else if (mouseX>bcoordst[1][0] && mouseX<bcoordst[1][1])                     // Restart
+      restartSimulation(input);
+    else if (mouseX>bcoordst[2][0] && mouseX<bcoordst[2][1])                     // Play
       paused = false;
-    else if (mouseX>bcoordst[3][0] && mouseX<bcoordst[3][1])   // Pause
+    else if (mouseX>bcoordst[3][0] && mouseX<bcoordst[3][1])                     // Pause
       paused = true;
   }
   else if (mouseY<668 && mouseY>628) {

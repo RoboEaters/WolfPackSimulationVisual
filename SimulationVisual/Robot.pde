@@ -3,11 +3,12 @@
 // UCI RoboCup Rescue 2013
 
 class Robot {
+  private int tileSize = SimulationVisual.TILE_SIZE;
   private int[][][] map;                // Map that only tracks this robot's positions
   private String identity;              // Identifier
   private int role;                     // Current role
-
-    private Boolean moving = false;       // Is in the process of animating
+  
+  private Boolean moving = false;       // Is in the process of animating
   private Boolean replaying = false;  // In the middle of a replay
   private Boolean initialized = false;  // Has been given an initial position
 
@@ -94,9 +95,9 @@ class Robot {
       }
     }
     fill(roleColor[role-1][0], roleColor[role-1][1], roleColor[role-1][2]);
-    ellipse(xCurr, yCurr, 30, 30);
+    ellipse(xCurr, yCurr, tileSize*0.6, tileSize*0.6);
     textAlign(CENTER, CENTER);
-    textSize(20);
+    textSize(tileSize*0.5);
     fill(0);
     text(identity, xCurr, yCurr);
   }
